@@ -38,9 +38,9 @@ mixer.init()
 
 class Main(tk.Tk):
     def __init__(self):
-        self.path_icon = r"skibidi dop dop dop yes yes.ico"
-        self.path_sound = r"skibidi dop dop dop yes yes.mp3"
-        self.path_gif = r"skibidi dop dop dop yes yes.gif"
+        self.path_icon = r"icon.ico"
+        self.path_sound = r"sound.mp3"
+        self.path_gif = r"animated_gif.gif"
         self.path_bg = r"bg.jpg"
 
         super().__init__()
