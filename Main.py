@@ -36,8 +36,8 @@ class Main(tk.Tk):
         self.path_image = r"animated_gif.gif"
         self.path_bg = r"bg.jpg"
 
-        self.header = "skibidi dop dop dop yes yes"
-        
+        self.header = "skibidi dop dop yes yes"
+
         self.state("zoomed")
         self.title(self.header)
         self.iconbitmap(self.path_icon)
