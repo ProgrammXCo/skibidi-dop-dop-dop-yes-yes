@@ -1,139 +1,86 @@
 from PIL import Image, ImageTk
 import tkinter as tk
-import time
-import threading
+import sys
 from pygame import mixer
-from itertools import cycle
-import signal
-import os
- 
-class GifLabel(tk.Label):
-    def load(self, im):
-        if isinstance(im, str):
-            im = Image.open(im)
-        frames = []
+from CanvasScreensaverImage import CanvasScreensaverImage
 
-        for i in range(im.n_frames):
-            frames.append(ImageTk.PhotoImage(im.copy()))
-            im.seek(i)
-            
-        self.frames = cycle(frames)
- 
-        try:
-            self.delay = im.info["duration"]
-        except:
-            self.delay = 100
- 
-        if len(frames) == 1:
-            self.config(image = next(self.frames))
-        else:
-            self.next_frame()
- 
-    def next_frame(self):
-        if self.frames:
-            self.config(image=next(self.frames))
-            self.after(self.delay, self.next_frame)
+class CustomCanvasScreensaver(CanvasScreensaverImage):
+    """заставка с воспроизведением звука при нажатии ЛКМ по изображению"""
+    def __init__(self, canvas: tk.Canvas, image: str, sound: str, *args, **kvargs):
+        self.__canvas = canvas
+        self.__image = image
+        self.__sound = sound
 
-mixer.init()
+        super().__init__(canvas = self.__canvas, image = self.__image, *args, **kvargs)
+
+        self.__canvas.tag_bind(self.id_canvas, "<ButtonPress-1>", self.__play_music)
+
+    def __play_music(self, event):
+        mixer.music.load(self.__sound)
+        mixer.music.play()
 
 class Main(tk.Tk):
     def __init__(self):
+        """главный класс; главное окно"""
+        super().__init__()
+        
+        self.withdraw()
+
+        # инициализация микшера для воспроизведения звуков
+        mixer.pre_init(44100, -16, 2, 2048)
+        mixer.init()
+
+        # ресурсы
         self.path_icon = r"icon.ico"
         self.path_sound = r"sound.mp3"
-        self.path_gif = r"animated_gif.gif"
+        self.path_image = r"animated_gif.gif"
         self.path_bg = r"bg.jpg"
 
-        super().__init__()
-
-        self.geometry("900x500")
+        self.header = "skibidi dop dop dop yes yes"
+        
         self.state("zoomed")
-        self.title("skibidi dop dop dop yes yes")
+        self.title(self.header)
         self.iconbitmap(self.path_icon)
 
-        self.protocol("WM_DELETE_WINDOW", self.exit_window)
+        self.protocol("WM_DELETE_WINDOW", self.exit_window) # ослеживать нажание на кнопку закрыть окно
 
-        self.canvas = tk.Canvas(self, bg = "white", highlightthickness=0)
+        self.canvas = tk.Canvas(self, bg = "white", highlightthickness = 0)
         self.canvas.pack(fill = "both", expand = True)
-        
-        self.image_bg = Image.open(self.path_bg).convert("RGBA")
 
+  
         self.update()
         
-        self.width = self.canvas.winfo_width()
-        self.height = self.canvas.winfo_height()
+        width_canvas = self.canvas.winfo_width()
+        height_canvas = self.canvas.winfo_height()
         
-        self.picture_bg = ImageTk.PhotoImage(self.image_bg.resize((self.width, self.height), Image.Resampling.LANCZOS))
-        self.picture_bg_tk = self.canvas.create_image(0, 0, image=self.picture_bg, anchor="nw")
+        # создание фонового изображения на холст и масштабирование под размер холста
+        self.image_bg = Image.open(self.path_bg).convert("RGBA")
+        self.picture_bg = ImageTk.PhotoImage(self.image_bg.resize((width_canvas, height_canvas), Image.Resampling.LANCZOS))
+        self.picture_bg_tk = self.canvas.create_image(0, 0, image = self.picture_bg, anchor = "nw")
 
         self.canvas.bind("<Configure>", self.scale_image)
 
-        self.gif = GifLabel(self.canvas, borderwidth = 0)
-        self.gif.place(x = 0, y = 0)
-        self.gif.load(self.path_gif)
-        self.gif.bind("<ButtonPress-1>", self.play_music)
+        # создание кастомизированной заставки
+        screensaver = CustomCanvasScreensaver(canvas = self.canvas, image = self.path_image, sound = self.path_sound)
+        width_screensaver, height_screensaver = screensaver.size
 
-        self.update()
+        self.minsize(width_screensaver + 100, height_screensaver + 100)
 
-        self.gif_width = self.gif.winfo_width()
-        self.gif_height = self.gif.winfo_height()
-
-        self.minsize(self.gif_width + 100, self.gif_height + 100)
-
-        self.xspeed = 1
-        self.yspeed = 1
-
-        self.closing = False
-
-        self.thread = threading.Thread(target = self.start)
-        self.thread.start()
+        self.geometry("900x500")
 
         self.mainloop()
 
-    def start(self):
-        self.update()
-        while not self.closing:
-            
-            self.move()
-            self.update()
-            time.sleep(0.003)
-
-        self.exit_programm()
-
-    def exit_programm(self):
-        os.kill(os.getpid(), signal.SIGINT)
-
     def scale_image(self, event):
-        self.width = self.canvas.winfo_width()
-        self.height = self.canvas.winfo_height()
+        """масштабирование фона под размер холста"""
+        width_canvas = self.canvas.winfo_width()
+        height_canvas = self.canvas.winfo_height()
 
-        self.picture_bg = ImageTk.PhotoImage(self.image_bg.resize((self.width, self.height), Image.Resampling.LANCZOS))
+        self.picture_bg = ImageTk.PhotoImage(self.image_bg.resize((width_canvas, height_canvas), Image.Resampling.LANCZOS))
         self.canvas.itemconfig(self.picture_bg_tk, image = self.picture_bg)
-        
-    def move(self):
-        self.gif.place(x = self.gif.winfo_x() + self.xspeed, y = self.gif.winfo_y() + self.yspeed)
-
-        pos = [
-            self.gif.winfo_x(), 
-            self.gif.winfo_y(), 
-            self.gif.winfo_x() + self.gif_width,
-            self.gif.winfo_y() + self.gif_height
-        ]
-
-        self.width = self.canvas.winfo_width()
-        self.height = self.canvas.winfo_height()
-        
-        if (pos[3] >= self.height and self.yspeed > 0) or (pos[1] <= 0  and self.yspeed < 0):
-            self.yspeed = -1 * self.yspeed
-
-        if (pos[2] >= self.width and self.xspeed > 0) or (pos[0] <= 0 and self.xspeed < 0):
-            self.xspeed = -1 * self.xspeed
-
-    def play_music(self, event):
-        mixer.music.load(self.path_sound)
-        mixer.music.play()
 
     def exit_window(self):
-        self.closing = True
+        """выход из программы"""
+        sys.exit()
 
 if __name__ == "__main__":
     Main()
