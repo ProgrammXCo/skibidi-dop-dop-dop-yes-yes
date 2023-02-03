@@ -4,7 +4,7 @@ from itertools import count
 
 class CanvasScreensaverImage():
     """заставка на холст tk, позволяющая отображать изображения и анимированные gif"""
-    def __init__(self, canvas: tk.Canvas, image: str, x: int = 0, y: int = 0, x_speed: int = 1, y_speed: int = 1):
+    def __init__(self, canvas: tk.Canvas, image: str, x: int = 0, y: int = 0, x_speed: int = 0.75, y_speed: int = 0.75):
         self.__canvas = canvas
         self.__x = x
         self.__y = y
