@@ -84,7 +84,9 @@ class CanvasScreensaver(CanvasImage):
 
         super().__init__(canvas = self.__canvas, image = self.__image)
 
-        self.__canvas.tag_bind(self.id_canvas, "<ButtonPress-1>", self.__play_music)
+        self.__canvas.tag_bind(self.id_canvas, "<ButtonPress-1>", self.__play_music) # ЛКМ
+        self.__canvas.tag_bind(self.id_canvas, "<ButtonPress-2>", self.__play_music) # СКМ
+        self.__canvas.tag_bind(self.id_canvas, "<ButtonPress-3>", self.__play_music) # ПКМ
 
         self.__canvas.after(self.__delay_move, lambda: (self.move(self.__x + self.__x_speed, self.__y + self.__y_speed)))
 
