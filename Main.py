@@ -1,34 +1,14 @@
 from PIL import Image, ImageTk
 import tkinter as tk
 import sys
-from pygame import mixer
-from CanvasScreensaverImage import CanvasScreensaverImage
-
-class CustomCanvasScreensaver(CanvasScreensaverImage):
-    """заставка с воспроизведением звука при нажатии ЛКМ по изображению"""
-    def __init__(self, canvas: tk.Canvas, image: str, sound: str, *args, **kvargs):
-        self.__canvas = canvas
-        self.__image = image
-        self.__sound = sound
-
-        super().__init__(canvas = self.__canvas, image = self.__image, *args, **kvargs)
-
-        self.__canvas.tag_bind(self.id_canvas, "<ButtonPress-1>", self.__play_music)
-
-    def __play_music(self, event):
-        mixer.music.load(self.__sound)
-        mixer.music.play()
+from CanvasScreensaverImage import CanvasScreensaver
 
 class Main(tk.Tk):
+    """главный класс"""
     def __init__(self):
-        """главный класс; главное окно"""
         super().__init__()
         
-        self.withdraw()
-
-        # инициализация микшера для воспроизведения звуков
-        mixer.pre_init(44100, -16, 2, 2048)
-        mixer.init()
+        self.withdraw() # спрятать окно
 
         # ресурсы
         self.path_icon = r"icon.ico"
@@ -38,7 +18,7 @@ class Main(tk.Tk):
 
         self.header = "skibidi dop dop yes yes"
 
-        self.state("zoomed")
+        self.state("zoomed") # развернуть окно
         self.title(self.header)
         self.iconbitmap(self.path_icon)
 
@@ -46,7 +26,6 @@ class Main(tk.Tk):
 
         self.canvas = tk.Canvas(self, bg = "white", highlightthickness = 0)
         self.canvas.pack(fill = "both", expand = True)
-
   
         self.update()
         
@@ -60,13 +39,13 @@ class Main(tk.Tk):
 
         self.canvas.bind("<Configure>", self.scale_image)
 
-        # создание кастомизированной заставки
-        screensaver = CustomCanvasScreensaver(canvas = self.canvas, image = self.path_image, sound = self.path_sound)
+        # создание заставки
+        screensaver = CanvasScreensaver(canvas = self.canvas, image = self.path_image, sound = self.path_sound)
         width_screensaver, height_screensaver = screensaver.size
 
         self.minsize(width_screensaver + 100, height_screensaver + 100)
 
-        self.geometry("900x500")
+        self.geometry("900x500") # показать окно
 
         self.mainloop()
 

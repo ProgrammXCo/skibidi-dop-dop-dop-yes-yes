@@ -1,16 +1,14 @@
 from PIL import Image, ImageTk
 import tkinter as tk
 from itertools import count
+from pygame import mixer
 
-class CanvasScreensaverImage():
+class CanvasImage():
     """заставка на холст tk, позволяющая отображать изображения и анимированные gif"""
-    def __init__(self, canvas: tk.Canvas, image: str, x: int = 0, y: int = 0, x_speed: int = 0.8, y_speed: int = 0.8):
+    def __init__(self, canvas: tk.Canvas, image: str, x: int = 0, y: int = 0):
         self.__canvas = canvas
         self.__x = x
         self.__y = y
-        self.__x_speed = x_speed
-        self.__y_speed = y_speed
-        self.__delay_move = 3
         if isinstance(image, str):
             image = Image.open(image)
         self.__loc = 0
@@ -32,9 +30,8 @@ class CanvasScreensaverImage():
 
         if len(self.__frames) > 0:
             self.__screensaver = self.__canvas.create_image(self.__x, self.__y, image = self.__frames[0], anchor = tk.NW)
-            self.__canvas.after(self.__delay_move, lambda: (self.move(self.__x + self.__x_speed, self.__y + self.__y_speed)))
-
             self.__size_screensaver = [self.__frames[0].width(), self.__frames[0].height()]
+
             if len(self.__frames) > 1:
                 self.__canvas.after(self.__delay_anim, self.__next_frame)
 
@@ -58,6 +55,39 @@ class CanvasScreensaverImage():
         """возвращает y"""
         return self.__y
 
+    def __next_frame(self):
+        """новый кадр в анимировананных gif"""
+        self.__loc = (self.__loc + 1) % self.__len_frame
+        self.__canvas.itemconfig(self.__screensaver, image = self.__frames[self.__loc])
+        self.__canvas.after(self.__delay_anim, self.__next_frame)
+
+class CanvasScreensaver(CanvasImage):
+    """заставка с движением и воспроизведением звука при нажатии ЛКМ по изображению"""
+
+    # инициализация микшера для воспроизведения звуков
+    mixer.pre_init(44100, -16, 8, 2048)
+    mixer.init()
+    channel = -1
+
+    def __init__(self, canvas: tk.Canvas, image: str, sound: str, x: int = 0, y: int = 0, x_speed: int = 0.8, y_speed: int = 0.8):
+        self.__canvas = canvas
+        self.__sound = sound
+        self.__image = image
+        self.__x = x
+        self.__y = y
+        self.__x_speed = x_speed
+        self.__y_speed = y_speed
+        self.__delay_move = 3
+
+        CanvasScreensaver.channel += 1
+        self.__channel = mixer.Channel(CanvasScreensaver.channel)
+
+        super().__init__(canvas = self.__canvas, image = self.__image)
+
+        self.__canvas.tag_bind(self.id_canvas, "<ButtonPress-1>", self.__play_music)
+
+        self.__canvas.after(self.__delay_move, lambda: (self.move(self.__x + self.__x_speed, self.__y + self.__y_speed)))
+
     @property 
     def x_speed(self) -> int:
         """возвращает скорость по горизонтали"""
@@ -78,20 +108,14 @@ class CanvasScreensaverImage():
         """устанавливает новую скорость по вертикали"""
         self.__y_speed = y_speed
 
-    def __next_frame(self):
-        """новый кадр в анимировананных gif"""
-        self.__loc = (self.__loc + 1) % self.__len_frame
-        self.__canvas.itemconfig(self.__screensaver, image = self.__frames[self.__loc])
-        self.__canvas.after(self.__delay_anim, self.__next_frame)
-
     def move(self, x: int, y: int):
         """изменить координату изображения на холсте"""
         self.__x = x
         self.__y = y
 
-        self.__canvas.coords(self.__screensaver, self.__x, self.__y)
+        self.__canvas.coords(self.id_canvas, self.__x, self.__y)
 
-        pos = self.__canvas.bbox(self.__screensaver)
+        pos = self.__canvas.bbox(self.id_canvas)
 
         width_canvas = self.__canvas.winfo_width()
         height_canvas = self.__canvas.winfo_height()
@@ -103,3 +127,7 @@ class CanvasScreensaverImage():
             self.__y_speed = -1 * self.__y_speed
 
         self.__canvas.after(self.__delay_move, lambda:(self.move(self.__x + self.__x_speed, self.__y + self.__y_speed)))
+
+    def __play_music(self, event):
+        sound = mixer.Sound(self.__sound)
+        self.__channel.play(sound)
